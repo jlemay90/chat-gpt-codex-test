@@ -1,0 +1,9 @@
+node_modules
+dist
+coverage
+.env
+.env.local
+.env.*.local
+*.log
+vite.config.js
+tsconfig.tsbuildinfo
