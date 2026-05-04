@@ -1,39 +1,49 @@
-# Lead Intel MVP
+# Lead Intel
 
-Address-first lead intelligence for Spectrum field sales.
+Lead Intel is a mock-data Vite React app for Spectrum field sales reps. Type an address, see a lead-quality dashboard, and keep notes and recent searches in localStorage.
 
-## What it does
+## What it includes
 
-- Enter an address and get a lead score, best angle, opener, and source health.
-- Works in mock mode without paid provider keys.
-- Saves notes and status in SQLite.
+- Address search
+- Mock lead lookup results
+- Lead score and letter grade
+- Property, ownership, and sales history cards
+- Recommended sales angle and generated opener
+- Notes saved per address in localStorage
+- Recent searches saved in localStorage
 
-## Stack
-
-- Vite
-- React
-- TypeScript
-- Tailwind CSS
-- Express
-- SQLite
-
-## Setup
+## Run locally
 
 ```bash
-pnpm install
-pnpm dev
+npm install
+npm run dev
 ```
 
-## Verification
+The dev server runs on `http://localhost:3000`.
+
+## Verify
 
 ```bash
-pnpm test
-pnpm typecheck
-pnpm build
+npm test
+npm run build
 ```
 
-## Environment
+## Deploy to Vercel
 
-Copy `.env.example` to `.env` and set the provider keys you want to use.
+1. Import the repo into Vercel.
+2. Use the Vite preset or set these values manually:
+   - Build command: `npm run build`
+   - Output directory: `dist`
+3. Deploy.
 
-The app defaults to mock mode when live keys are missing, so it still runs without paid APIs.
+## Deploy to Replit
+
+1. Create a new Replit project from this GitHub repo.
+2. Set the run command to `npm run dev`.
+3. Make sure Replit exposes port `3000`.
+4. If you want a production preview inside Replit, use `npm run preview`.
+
+## Notes
+
+- This v1 uses mock data only.
+- No real APIs are connected yet.
