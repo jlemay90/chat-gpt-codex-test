@@ -52,6 +52,16 @@ function mergeLiveIntoLead(mockLead, liveData) {
     const na = liveData.normalizedAddress;
     const parts = [na.line1, na.city, na.state, na.zip].filter(Boolean);
     if (parts.length > 0) merged.address = parts.join(", ");
+    if (na.city || na.state) {
+      merged.market = [na.city, na.state].filter(Boolean).join(", ") || mockLead.market;
+    }
+  }
+  if (liveData.ownership) {
+    merged.scenarioLabel = liveData.ownership.ownerOccupied
+      ? "Owner-occupied live lead"
+      : liveData.ownership.absenteeOwner
+        ? "Absentee owner live lead"
+        : "Live lookup result";
   }
   return merged;
 }
@@ -126,10 +136,10 @@ export function App() {
         </div>
         <div className="topbar-badges">
           {isLoading ? (
-            <span className="status-chip status-chip--loading">Fetching live data…</span>
+            <span className="status-chip status-chip--loading">Fetching live data...</span>
           ) : (
             <span className={`status-chip ${dataSource === "live" ? "status-chip--good" : ""}`}>
-              {dataSource === "live" ? "Live data" : dataSource === "mock" ? "Mock data" : "Loading…"}
+              {dataSource === "live" ? "Live data" : dataSource === "mock" ? "Mock data" : "Loading..."}
             </span>
           )}
           {broadband?.spectrumServiceable === true && (

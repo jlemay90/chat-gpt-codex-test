@@ -9,10 +9,10 @@ export function AddressSearch({
     <section className="card card--hero">
       <div className="section-head">
         <div>
-          <p className="eyebrow">Mock lookup</p>
+          <p className="eyebrow">Address lookup</p>
           <h2 className="section-title">Score an address in seconds</h2>
         </div>
-        <span className="status-chip">Mock data only</span>
+        <span className="status-chip">Live API ready</span>
       </div>
 
       <form
@@ -42,7 +42,7 @@ export function AddressSearch({
 
       <div className="helper-row">
         <p className="helper-copy">
-          Field-sales ready, mobile-first, and saved locally. No APIs connected yet.
+          Field-sales ready, mobile-first, and saved locally. Uses the live backend when available and falls back safely if it is offline.
         </p>
       </div>
 

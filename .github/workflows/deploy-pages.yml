@@ -31,6 +31,14 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Set API base URL
+        run: |
+          if [ -n "$AZURE_WEBAPP_NAME" ]; then
+            echo "VITE_LEAD_INTEL_API_BASE_URL=https://${AZURE_WEBAPP_NAME}.azurewebsites.net" >> "$GITHUB_ENV"
+          fi
+        env:
+          AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+
       - name: Build
         run: npm run build:pages
 
