@@ -1,0 +1,90 @@
+name: Deploy Azure Frontend (Static Web Apps)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: azure-swa
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      AZURE_STATIC_WEBAPP_NAME: ${{ vars.AZURE_STATIC_WEBAPP_NAME }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build app (Azure root base path)
+        run: npm run build
+
+      - name: Validate Azure workflow inputs
+        id: validate
+        run: |
+          missing=0
+          for key in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID AZURE_RESOURCE_GROUP AZURE_STATIC_WEBAPP_NAME; do
+            if [ -z "${!key}" ]; then
+              echo "::warning::Missing required value: $key"
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 1 ]; then
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Azure login (OIDC)
+        if: steps.validate.outputs.should_deploy == 'true'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get SWA deployment token from Azure
+        if: steps.validate.outputs.should_deploy == 'true'
+        id: swa_token
+        run: |
+          az config set extension.use_dynamic_install=yes_without_prompt
+          token="$(az staticwebapp secrets list \
+            --name "$AZURE_STATIC_WEBAPP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --query "properties.apiKey" \
+            --output tsv)"
+          if [ -z "$token" ]; then
+            echo "::error::Unable to retrieve SWA deployment token."
+            exit 1
+          fi
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy dist to Azure Static Web Apps
+        if: steps.validate.outputs.should_deploy == 'true'
+        run: npx -y @azure/static-web-apps-cli@2.0.2 deploy ./dist --env production --deployment-token "${{ steps.swa_token.outputs.token }}"
+
+      - name: Skip deploy summary
+        if: steps.validate.outputs.should_deploy != 'true'
+        run: |
+          echo "Azure SWA deployment skipped. Configure repository secrets/variables first."

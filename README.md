@@ -26,22 +26,43 @@ The dev server runs on `http://localhost:3000`.
 ```bash
 npm test
 npm run build
+npm run api:start
 ```
 
-## Deploy to Vercel
+API health check while running locally:
 
-1. Import the repo into Vercel.
-2. Use the Vite preset or set these values manually:
-   - Build command: `npm run build`
-   - Output directory: `dist`
-3. Deploy.
+```bash
+curl http://localhost:8787/api/health
+```
 
-## Deploy to Replit
+## Deploy to Azure (Primary)
 
-1. Create a new Replit project from this GitHub repo.
-2. Set the run command to `npm run dev`.
-3. Make sure Replit exposes port `3000`.
-4. If you want a production preview inside Replit, use `npm run preview`.
+Azure deploy is split across two workflows:
+- Frontend: `.github/workflows/deploy-azure-swa.yml` (Static Web Apps)
+- API: `.github/workflows/deploy-azure-api.yml` (App Service)
+
+Use this runbook for resource creation + OIDC + GitHub secrets/vars:
+- `docs/azure-launch-runbook.md`
+
+Required GitHub **secrets**:
+- `AZURE_CLIENT_ID`
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
+
+Required GitHub **variables**:
+- `AZURE_RESOURCE_GROUP`
+- `AZURE_WEBAPP_NAME`
+- `AZURE_STATIC_WEBAPP_NAME`
+
+Push to `main` after secrets/vars are configured.
+
+## Deploy to GitHub Pages (Backup)
+
+This repo keeps GitHub Pages as a free backup deployment:
+- Workflow: `.github/workflows/deploy-pages.yml`
+- URL: `https://jlemay90.github.io/chat-gpt-codex-test/`
+
+The Pages build uses `npm run build:pages`, which applies base path `/chat-gpt-codex-test/`.
 
 ## Notes
 
