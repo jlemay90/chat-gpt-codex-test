@@ -9,3 +9,4 @@ coverage
 lead_intel.db
 lead_intel.db-shm
 lead_intel.db-wal
+src/App.jsx.bak

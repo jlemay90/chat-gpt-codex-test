@@ -505,3 +505,77 @@ textarea {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* --- Live API status chips --- */
+.status-chip--good {
+  background: rgba(143, 242, 200, 0.12);
+  border-color: rgba(143, 242, 200, 0.3);
+  color: #8ff2c8;
+}
+.status-chip--warn {
+  background: rgba(255, 213, 138, 0.1);
+  border-color: rgba(255, 213, 138, 0.3);
+  color: var(--warm);
+}
+.status-chip--loading {
+  background: rgba(142, 208, 255, 0.1);
+  border-color: rgba(142, 208, 255, 0.3);
+  color: var(--accent-2);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* --- API error banner --- */
+.api-error-banner {
+  margin: 0 auto 12px;
+  max-width: 900px;
+  padding: 10px 16px;
+  background: rgba(255, 126, 155, 0.1);
+  border: 1px solid rgba(255, 126, 155, 0.3);
+  border-radius: 12px;
+  color: #ff7e9b;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.api-error-banner p { margin: 0; }
+
+/* --- Broadband table --- */
+.broadband-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+.broadband-row {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1fr 1fr;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.broadband-row--header {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(148, 169, 181, 0.6);
+  background: transparent;
+  border-color: transparent;
+}
+.broadband-row--spectrum {
+  background: rgba(143, 242, 200, 0.07);
+  border-color: rgba(143, 242, 200, 0.2);
+  color: #8ff2c8;
+}
+.broadband-name { font-weight: 600; color: var(--text); }
+.broadband-row--spectrum .broadband-name { color: #8ff2c8; }
+
+@media (min-width: 768px) {
+  .dashboard-grid--bottom { grid-template-columns: 1fr 1fr; }
+}
