@@ -79,6 +79,23 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           package: .
 
+      - name: Verify API health
+        if: steps.validate.outputs.should_deploy == 'true'
+        run: |
+          url="https://${AZURE_WEBAPP_NAME}.azurewebsites.net/api/health"
+          echo "API URL: $url"
+          for i in 1 2 3 4 5; do
+            if curl -fsS "$url"; then
+              echo
+              echo "API health check passed."
+              exit 0
+            fi
+            echo "Health check retry $i/5..."
+            sleep 8
+          done
+          echo "API health check failed."
+          exit 1
+
       - name: Skip deploy summary
         if: steps.validate.outputs.should_deploy != 'true'
         run: |

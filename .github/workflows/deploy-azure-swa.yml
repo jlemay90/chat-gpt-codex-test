@@ -84,6 +84,22 @@ jobs:
         if: steps.validate.outputs.should_deploy == 'true'
         run: npx -y @azure/static-web-apps-cli@2.0.2 deploy ./dist --env production --deployment-token "${{ steps.swa_token.outputs.token }}"
 
+      - name: Verify Static Web App URL
+        if: steps.validate.outputs.should_deploy == 'true'
+        run: |
+          host="$(az staticwebapp show \
+            --name "$AZURE_STATIC_WEBAPP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --query "defaultHostname" \
+            --output tsv)"
+          if [ -z "$host" ]; then
+            echo "::error::Unable to resolve Static Web App hostname."
+            exit 1
+          fi
+          url="https://$host"
+          echo "SWA URL: $url"
+          curl -fsS "$url" > /dev/null
+
       - name: Skip deploy summary
         if: steps.validate.outputs.should_deploy != 'true'
         run: |
