@@ -1,0 +1,13 @@
+.git
+.github
+node_modules
+dist
+coverage
+.env
+.env.local
+.env.*.local
+*.log
+lead_intel.db
+lead_intel.db-shm
+lead_intel.db-wal
+src/App.jsx.bak
