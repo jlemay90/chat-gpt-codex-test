@@ -35,13 +35,13 @@ API health check while running locally:
 curl http://localhost:8787/api/health
 ```
 
-## Deploy to Azure (Primary)
+## Deploy to Azure (Frontend Backup)
 
-Azure deploy is split across two workflows:
+Azure Static Web Apps is kept as a frontend deployment option:
 - Frontend: `.github/workflows/deploy-azure-swa.yml` (Static Web Apps)
-- API: `.github/workflows/deploy-azure-api.yml` (App Service)
+- API: Cloud Run at `https://lead-intel-api-okj2spbxlq-uc.a.run.app`
 
-Use this runbook for resource creation + OIDC + GitHub secrets/vars:
+Use this runbook for the previous Azure resource creation + OIDC notes:
 - `docs/azure-launch-runbook.md`
 
 Required GitHub **secrets**:
@@ -62,9 +62,10 @@ This repo keeps GitHub Pages as a free backup deployment:
 - Workflow: `.github/workflows/deploy-pages.yml`
 - URL: `https://jlemay90.github.io/chat-gpt-codex-test/`
 
-The Pages build uses `npm run build:pages`, which applies base path `/chat-gpt-codex-test/` and points the frontend at the Azure API automatically when the `AZURE_WEBAPP_NAME` variable is set.
+The Pages build uses `npm run build:pages`, which applies base path `/chat-gpt-codex-test/` and points the frontend at the Cloud Run API.
 
 ## Notes
 
 - The UI falls back to mock data if the backend or provider APIs are unavailable.
-- Provider keys stay in Azure App Service settings and are never hardcoded in the browser bundle.
+- Broadband data comes from the Lead Intel API response, not a browser-side FCC request.
+- Provider keys stay in server-side hosting settings and are never hardcoded in the browser bundle.

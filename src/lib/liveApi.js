@@ -1,4 +1,5 @@
-const API_BASE_URL = String(import.meta.env.VITE_LEAD_INTEL_API_BASE_URL ?? "").trim();
+const API_BASE_URL = String(import.meta.env?.VITE_LEAD_INTEL_API_BASE_URL ?? "").trim();
+const SPECTRUM_NAMES = ["charter", "spectrum", "charter communications"];
 
 function buildApiUrl(path) {
   if (!API_BASE_URL) {
@@ -19,6 +20,11 @@ function normalizeText(value) {
 function toNumber(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function isSpectrumProvider(name) {
+  const normalized = normalizeText(name).toLowerCase();
+  return SPECTRUM_NAMES.some((spectrumName) => normalized.includes(spectrumName));
 }
 
 function mapBackendLead(result, fallbackAddress) {
@@ -79,38 +85,43 @@ function mapBackendLead(result, fallbackAddress) {
   };
 }
 
-function mapBroadband(providers, fallbackSummary) {
-  if (!providers || providers.length === 0) {
+export function mapBackendBroadband(broadband) {
+  if (!broadband) {
     return {
       spectrumServiceable: false,
       gigAvailable: false,
       providers: [],
-      summary: fallbackSummary ?? "No FCC broadband data found for this address.",
+      summary: "Broadband data unavailable from the Lead Intel API.",
     };
   }
 
-  const SPECTRUM_NAMES = ["charter", "spectrum", "charter communications"];
-  const spectrumEntry = providers.find((provider) =>
-    SPECTRUM_NAMES.some((name) => normalizeText(provider.brand_name).toLowerCase().includes(name)),
-  );
+  const providerNames = Array.isArray(broadband.fccProviderSummary)
+    ? broadband.fccProviderSummary.map(normalizeText).filter(Boolean)
+    : [];
+  const spectrumServiceable = broadband.spectrumServiceable === true || providerNames.some(isSpectrumProvider);
+  const gigAvailable = broadband.gigAvailable === true;
 
-  const gigEntry = providers.find((provider) => (provider.max_advertised_download_speed ?? 0) >= 940);
-
-  const providerList = providers.map((provider) => ({
-    name: normalizeText(provider.brand_name) || "Unknown",
-    technology: normalizeText(provider.technology_name ?? provider.technology) || "Unknown",
-    downloadMbps: toNumber(provider.max_advertised_download_speed) ?? 0,
-    uploadMbps: toNumber(provider.max_advertised_upload_speed) ?? 0,
-    isSpectrum: SPECTRUM_NAMES.some((name) => normalizeText(provider.brand_name).toLowerCase().includes(name)),
+  const providerList = providerNames.map((name) => ({
+    name,
+    technology: "Fixed broadband",
+    downloadMbps: gigAvailable && isSpectrumProvider(name) ? 1000 : 0,
+    uploadMbps: 0,
+    isSpectrum: isSpectrumProvider(name),
   }));
 
+  const availabilityText = spectrumServiceable
+    ? `Spectrum is available${gigAvailable ? " with gig-capable service" : ""}.`
+    : "Spectrum is not confirmed for this address.";
+  const providerText = providerList.length > 0
+    ? `${providerList.length} provider signal(s): ${providerList.map((provider) => provider.name).join(", ")}.`
+    : "No provider list returned by the backend.";
+  const notesText = broadband.notes ? ` ${broadband.notes}` : "";
+
   return {
-    spectrumServiceable: Boolean(spectrumEntry),
-    gigAvailable: Boolean(gigEntry),
+    spectrumServiceable,
+    gigAvailable,
     providers: providerList,
-    summary: spectrumEntry
-      ? `Spectrum is available (${spectrumEntry.max_advertised_download_speed ?? "?"} Mbps down). ${providers.length} total ISP(s) at this address.`
-      : `Spectrum is not listed at this address. ${providers.length} other ISP(s) are present.`,
+    summary: `${availabilityText} ${providerText}${notesText}`,
   };
 }
 
@@ -128,55 +139,6 @@ async function lookupLeadIntel(address) {
   }
 
   return response.json();
-}
-
-async function geocodeAddress(address) {
-  const params = new URLSearchParams({
-    address,
-    benchmark: "2020",
-    format: "json",
-  });
-
-  const response = await fetch(`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?${params}`);
-  if (!response.ok) {
-    throw new Error(`Geocode ${response.status}`);
-  }
-
-  const json = await response.json();
-  const match = json?.result?.addressMatches?.[0];
-  if (!match) {
-    return null;
-  }
-
-  return {
-    lat: match.coordinates.y,
-    lon: match.coordinates.x,
-    normalizedAddress: match.matchedAddress,
-  };
-}
-
-async function getFccBroadband(lat, lon) {
-  const params = new URLSearchParams({
-    latitude: lat,
-    longitude: lon,
-    category: "Fixed Broadband",
-    limit: 25,
-    offset: 0,
-  });
-
-  const response = await fetch(`https://broadbandmap.fcc.gov/api/public/map/listAvailability?${params}`, {
-    headers: {
-      "user-agent": "Lead Intel",
-      Accept: "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`FCC ${response.status}`);
-  }
-
-  const json = await response.json();
-  return json?.data ?? [];
 }
 
 export async function liveLookup(address) {
@@ -199,6 +161,7 @@ export async function liveLookup(address) {
     result.ownership = mappedLead.ownership;
     result.salesHistory = mappedLead.salesHistory;
     result.normalizedAddress = mappedLead.normalizedAddress;
+    result.broadband = mapBackendBroadband(backendLead?.broadband);
 
     if (Array.isArray(backendLead?.errors)) {
       result.errors.push(...backendLead.errors.filter((item) => typeof item === "string"));
@@ -207,37 +170,8 @@ export async function liveLookup(address) {
     result.errors.push(`Lead API lookup failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 
-  try {
-    const lat = result.normalizedAddress?.lat ?? null;
-    const lon = result.normalizedAddress?.lon ?? null;
-
-    if (lat != null && lon != null) {
-      const providers = await getFccBroadband(lat, lon);
-      result.broadband = mapBroadband(providers);
-    } else {
-      const geo = await geocodeAddress(address);
-      if (geo) {
-        const providers = await getFccBroadband(geo.lat, geo.lon);
-        result.broadband = mapBroadband(providers);
-
-        if (!result.normalizedAddress) {
-          result.normalizedAddress = {
-            line1: geo.normalizedAddress,
-            city: "",
-            state: "",
-            zip: "",
-            lat: geo.lat,
-            lon: geo.lon,
-          };
-        }
-      } else {
-        result.errors.push("Could not geocode address for broadband lookup.");
-        result.broadband = mapBroadband([]);
-      }
-    }
-  } catch (error) {
-    result.errors.push(`Broadband lookup failed: ${error instanceof Error ? error.message : String(error)}`);
-    result.broadband = mapBroadband([]);
+  if (!result.broadband) {
+    result.broadband = mapBackendBroadband(null);
   }
 
   return result;
