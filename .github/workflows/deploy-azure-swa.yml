@@ -1,9 +1,6 @@
 name: Deploy Azure Frontend (Static Web Apps)
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
@@ -21,8 +18,8 @@ jobs:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
-      AZURE_STATIC_WEBAPP_NAME: ${{ vars.AZURE_STATIC_WEBAPP_NAME }}
+      AZURE_RESOURCE_GROUP: rg-lead-intel-eastus
+      AZURE_STATIC_WEBAPP_NAME: lead-intelJL
 
     steps:
       - name: Checkout
@@ -43,7 +40,7 @@ jobs:
             echo "VITE_LEAD_INTEL_API_BASE_URL=https://${AZURE_WEBAPP_NAME}.azurewebsites.net" >> "$GITHUB_ENV"
           fi
         env:
-          AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+          AZURE_WEBAPP_NAME: ""
 
       - name: Build app (Azure root base path)
         run: npm run build
